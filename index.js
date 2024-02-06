@@ -8,7 +8,18 @@ const addEventForm = document.querySelector("#addEvent");
 //State
 const state = {
   events: [],
+  selectedEvent: null,
 };
+
+function setSelectedEvent(event) {
+  state.selectedEvent = event;
+  location.hash = event.id;
+}
+
+function loadEventFromHash() {
+  const id = +location.hash.slice(1);
+  state.selectedEvent = state.events.find((event) => event.id === id);
+}
 
 /**
  * Update state with events from API
@@ -29,6 +40,7 @@ async function getEvents() {
 async function render() {
   await getEvents();
   renderEvents();
+  renderSelectedEvent();
 }
 
 //Render
@@ -45,17 +57,32 @@ function renderEvents() {
     const li = document.createElement("li");
     li.innerHTML = `
         <h2>${event.name}</h2>
-        <p2>${event.description}</p2>
-        <p2>${event.date}</p2>
-        <p>${event.location}</p>
         <button>Delete</button>
       `;
     const delButton = li.querySelector("button");
     delButton.addEventListener("click", () => deleteEvent(event.id));
+    li.addEventListener("click", (_event) => {
+      setSelectedEvent(event);
+      renderSelectedEvent();
+    });
     return li;
   });
 
   eventList.replaceChildren(...eventCards);
+}
+
+function renderSelectedEvent() {
+  const renderedEvent = document.querySelector("ul.selected_event");
+  if (state.selectedEvent) {
+    renderedEvent.innerHTML = `
+  <h2>${state.selectedEvent.name}</h2>
+  <p2>${state.selectedEvent.description}</p2>
+  <p2>${state.selectedEvent.date}</p2>
+  <p>${state.selectedEvent.location}</p>
+  `;
+  } else {
+    renderedEvent.innerHTML = "Please select an event";
+  }
 }
 
 /**
@@ -100,6 +127,7 @@ async function deleteEvent(id) {
     if (!response.ok) {
       throw new Error("Failed to delete event");
     }
+    state.selectedEvent = null;
     render();
   } catch (error) {
     console.error(error);
@@ -108,5 +136,13 @@ async function deleteEvent(id) {
 
 //Script
 
-render();
+async function init() {
+  await getEvents();
+  renderEvents();
+
+  loadEventFromHash();
+  renderSelectedEvent();
+}
+
+window.addEventListener("load", init);
 addEventForm.addEventListener("submit", addEvent);
