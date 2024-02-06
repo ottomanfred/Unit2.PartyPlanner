@@ -50,6 +50,8 @@ function renderEvents() {
         <p>${event.location}</p>
         <button>Delete</button>
       `;
+    const delButton = li.querySelector("button");
+    delButton.addEventListener("click", () => deleteEvent(event.id));
     return li;
   });
 
@@ -64,13 +66,14 @@ async function addEvent(event) {
   event.preventDefault();
 
   try {
+    const date = new Date(addEventForm.date.value).toISOString();
     const response = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: addEventForm.name.value,
         description: addEventForm.description.value,
-        date: addEventForm.date.value,
+        date,
         location: addEventForm.location.value,
       }),
     });
@@ -78,7 +81,25 @@ async function addEvent(event) {
     if (!response.ok) {
       throw new Error("Failed to create event");
     }
+    addEventForm.name.value = "";
+    addEventForm.description.value = "";
+    addEventForm.date.value = "";
+    addEventForm.location.value = "";
+    render();
+  } catch (error) {
+    console.error(error);
+  }
+}
 
+async function deleteEvent(id) {
+  try {
+    const response = await fetch(API_URL + `/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to delete event");
+    }
     render();
   } catch (error) {
     console.error(error);
